@@ -12,7 +12,6 @@ BRONZE_ROOT = (
     / "trades"
 )
 
-
 def new_batch_id():
 
     return (
