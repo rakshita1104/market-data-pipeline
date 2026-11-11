@@ -56,3 +56,46 @@ def init_db(con):
             PRIMARY KEY (symbol, agg_trade_id)
         )
     """)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS fact_market_trades (
+            symbol         VARCHAR,
+            agg_trade_id   BIGINT,
+            price          DECIMAL(18,8),
+            quantity       DECIMAL(18,8),
+            trade_value    DECIMAL(28,8),
+            trade_ts       TIMESTAMP,
+            ingestion_ts   TIMESTAMP,
+            PRIMARY KEY (symbol, agg_trade_id)
+        )
+    """)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS fact_market_metrics (
+            symbol          VARCHAR,
+            window_start    TIMESTAMP,
+            trade_count     BIGINT,
+            open_price      DECIMAL(18,8),
+            high_price      DECIMAL(18,8),
+            low_price       DECIMAL(18,8),
+            close_price     DECIMAL(18,8),
+            total_quantity  DECIMAL(28,8),
+            total_value     DECIMAL(28,8),
+            PRIMARY KEY (symbol, window_start)
+        )
+    """)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS pipeline_runs (
+            run_id               VARCHAR,
+            flow_name            VARCHAR,
+            start_time           TIMESTAMP,
+            end_time             TIMESTAMP,
+            duration_seconds     DOUBLE,
+            run_status           VARCHAR,
+            records_received     BIGINT,
+            records_inserted     BIGINT,
+            records_skipped      BIGINT,
+            records_quarantined  BIGINT,
+            records_published    BIGINT,
+            retry_count          INTEGER,
+            error_message        VARCHAR
+        )
+    """)

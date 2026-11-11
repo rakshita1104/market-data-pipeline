@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime, timezone
 
 from ingestion.rest_client import fetch_agg_trades
@@ -7,6 +8,7 @@ from processing.db import get_connection, init_db
 
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 PAGE_SIZE = 1000
+MAX_PAGES_PER_RUN = 20
 
 
 def get_checkpoint(con, symbol):
@@ -56,26 +58,34 @@ def load_symbol(con, symbol):
     mode = "incremental" if checkpoint is not None else "initial"
 
     total_received = total_inserted = total_skipped = 0
+    pages = 0
 
     while True:
+        t0 = time.time()
         trades = fetch_agg_trades(symbol, from_id=from_id, limit=PAGE_SIZE)
         if not trades:
             break
 
         batch_id = new_batch_id()
-        write_batch(symbol, trades, batch_id)          # 1. Bronze file first
-        inserted, skipped = load_page(con, symbol, trades, batch_id)  # 2. DB + checkpoint
+        write_batch(symbol, trades, batch_id)
+        inserted, skipped = load_page(con, symbol, trades, batch_id)
 
         total_received += len(trades)
         total_inserted += inserted
         total_skipped += skipped
+        pages += 1
+        print(f"  {symbol} page {pages}: {len(trades)} trades in {time.time() - t0:.1f}s", flush=True)
 
-        if len(trades) < PAGE_SIZE:   # last page, nothing more to fetch
+        if len(trades) < PAGE_SIZE:
+            break
+        if pages >= MAX_PAGES_PER_RUN:
+            print(f"  {symbol}: page cap reached, rest of the backlog continues next run")
             break
         from_id = max(t["a"] for t in trades) + 1
 
     print(f"{symbol} [{mode}] received={total_received} "
           f"inserted={total_inserted} skipped={total_skipped}")
+    return total_received, total_inserted, total_skipped
 
 
 def main():
