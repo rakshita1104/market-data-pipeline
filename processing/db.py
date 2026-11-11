@@ -29,3 +29,30 @@ def init_db(con):
             updated_at         TIMESTAMP
         )
     """)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS silver_trades (
+            symbol          VARCHAR,
+            agg_trade_id    BIGINT,
+            price           DECIMAL(18,8),
+            quantity        DECIMAL(18,8),
+            trade_ts        TIMESTAMP,
+            is_buyer_maker  BOOLEAN,
+            batch_id        VARCHAR,
+            ingestion_ts    TIMESTAMP,
+            PRIMARY KEY (symbol, agg_trade_id)
+        )
+    """)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS quarantine_records (
+            symbol             VARCHAR,
+            agg_trade_id       BIGINT,
+            raw_payload        VARCHAR,
+            error_category     VARCHAR,
+            error_message      VARCHAR,
+            batch_id           VARCHAR,
+            detected_at        TIMESTAMP,
+            reprocess_status   VARCHAR,
+            retry_count        INTEGER,
+            PRIMARY KEY (symbol, agg_trade_id)
+        )
+    """)
